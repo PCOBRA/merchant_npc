@@ -10,7 +10,7 @@ Config.MerchantDuration = 1800
 Config.NotifyDuration = 5000
 Config.DiscordWebhook = "https://discord.com/api/webhooks/your_webhook_url_here"
 
-Config.MerchantCoords = {
+Config.MerchantCoords = { -- vị trí Vec4
    --------
 }
 
