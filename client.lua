@@ -1,27 +1,15 @@
 local lib = exports.ox_lib
 local merchantPed = nil
-local merchantCoords = {
-    -----vi tri random------
-}
 
-local function spawnMerchant()
-    if merchantPed then
-        DeleteEntity(merchantPed)
-        merchantPed = nil
-    end
-    
-    local coords = merchantCoords[math.random(#merchantCoords)]
+local function spawnMerchant(coords)
+    if merchantPed then DeleteEntity(merchantPed) end
     local model = "g_m_m_chicold_01"
     RequestModel(model)
-    while not HasModelLoaded(model) do
-        Wait(500)
-    end
-    
-    merchantPed = CreatePed(4, model, coords.x, coords.y, coords.z - 1.0, coords.w, false, true)
+    while not HasModelLoaded(model) do Wait(500) end
+    merchantPed = CreatePed(4, model, coords.x, coords.y, coords.z - 1.0, coords.w, true, true)
     SetEntityInvincible(merchantPed, true)
     SetBlockingOfNonTemporaryEvents(merchantPed, true)
     FreezeEntityPosition(merchantPed, true)
-    
     exports.ox_target:addLocalEntity(merchantPed, {
         {
             name = 'merchant_npc',
@@ -32,30 +20,24 @@ local function spawnMerchant()
             end
         }
     })
-    
-    TriggerServerEvent('merchant:resetStock')
-    lib:notify({ title = 'Thương nhân đã xuất hiện!', description = 'Hãy tìm thương nhân để mua hàng. Bạn có 10 phút để tìm ra anh ấy!', type = 'inform', position = 'center-left', duration = 15000 })
-    
-    Wait(600000) -- 10 phút (600 giây = 600000 ms)
-    
-    if merchantPed then
-        DeleteEntity(merchantPed)
-        merchantPed = nil
-        lib:hideContext('merchant_shop')
-        exports.ox_inventory:closeInventory()
-        lib:notify({ title = 'Thương nhân đã rời đi!', description = 'Bạn đã bỏ lỡ cơ hội giao dịch.', type = 'error', position = 'center-left', duration = 15000 })
-    end
 end
 
-CreateThread(function()
-    while true do
-        Wait(7200000) -- 120 phút (7200 giây = 7200000 ms)
-        spawnMerchant()
-    end
+local function removeMerchant()
+    if merchantPed then DeleteEntity(merchantPed) end
+end
+
+RegisterNetEvent('merchant:spawnMerchant', function(coords)
+    spawnMerchant(coords)
+    lib:notify({ title = 'Thương nhân đã xuất hiện!', description = 'Hãy tìm thương nhân để mua hàng. Bạn có 30 phút!', type = 'inform', position = 'center-left', duration = Config.NotifyDuration })
 end)
 
-RegisterNetEvent('merchant:openShop')
-AddEventHandler('merchant:openShop', function(items)
+RegisterNetEvent('merchant:removeMerchant', function()
+    removeMerchant()
+    lib:hideContext('merchant_shop')
+    lib:notify({ title = 'Thương nhân đã rời đi!', description = 'Bạn đã bỏ lỡ cơ hội giao dịch.', type = 'error', position = 'center-left', duration = Config.NotifyDuration })
+end)
+
+RegisterNetEvent('merchant:openShop', function(items)
     local options = {}
     for _, item in ipairs(items) do
         options[#options + 1] = {
@@ -67,7 +49,6 @@ AddEventHandler('merchant:openShop', function(items)
             end
         }
     end
-
     lib:registerContext({ id = 'merchant_shop', title = 'Thương nhân chợ đen', options = options })
     lib:showContext('merchant_shop')
 end)
